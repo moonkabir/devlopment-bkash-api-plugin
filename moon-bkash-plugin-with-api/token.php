@@ -1,0 +1,51 @@
+<?php
+session_start();
+$request_token=bkash_Get_Token();
+// print_r($request_token);
+$idtoken=$request_token['id_token'];
+$refreshtoken=$request_token['refresh_token'];
+$_SESSION['token']=$idtoken;
+$_SESSION['refresh_token']=$refreshtoken;
+$strJsonFileContents = file_get_contents("config.json");
+
+print_r($strJsonFileContents);
+
+$array = json_decode($strJsonFileContents, true);
+// print_r($array);
+$array['token']=$idtoken;
+$array['refresh_token']=$refreshtoken;
+$newJsonString = json_encode($array);
+// print_r($newJsonString);
+file_put_contents('config.json',$newJsonString);
+
+// echo $idtoken;
+function bkash_Get_Token(){
+
+	$strJsonFileContents = file_get_contents("config.json");
+	$array = json_decode($strJsonFileContents, true);
+	
+	$post_token=array(
+        'app_key'=>$array["app_key"],                                              
+		'app_secret'=>$array["app_secret"]                  
+	);	
+    
+    $url=curl_init($array["tokenURL"]);
+	$proxy = $array["proxy"];
+	$posttoken=json_encode($post_token);
+	$header=array(
+		'Content-Type:application/json',
+		'password:'.$array["password"],                                                               
+        'username:'.$array["username"]                                                           
+    );				
+    
+    curl_setopt($url,CURLOPT_HTTPHEADER, $header);
+	curl_setopt($url,CURLOPT_CUSTOMREQUEST, "POST");
+    curl_setopt($url,CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($url,CURLOPT_POSTFIELDS, $posttoken);
+	curl_setopt($url,CURLOPT_FOLLOWLOCATION, 1);
+	//curl_setopt($url, CURLOPT_PROXY, $proxy);
+	$resultdata=curl_exec($url);
+	curl_close($url);
+	return json_decode($resultdata, true);    
+}
+?>
