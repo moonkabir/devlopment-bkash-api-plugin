@@ -13,9 +13,12 @@
 function moon_bkash_plugin_load_textdomain()
 {
     load_plugin_textdomain('moon-bkash-plugin', false, dirname(__FILE__) . "/languages");
-
 }
 add_action('plugins_loaded', 'moon_bkash_plugin_load_textdomain');
+
+
+
+
 
 /*
  * This action hook registers our PHP class as a WooCommerce payment gateway
@@ -26,6 +29,10 @@ function misha_add_gateway_class( $gateways ) {
 	return $gateways;
 }
  
+
+
+
+
 /*
  * The class itself, please note that it is inside plugins_loaded action hook
  */
@@ -53,10 +60,6 @@ function misha_init_gateway_class() {
          
             // Method with all the options fields
             $this->init_form_fields();
-            $this->token();
-            // $this->createpayment();
-            // $this->executepayment();
-
 
             // Load the settings.
             $this->init_settings();
@@ -76,178 +79,8 @@ function misha_init_gateway_class() {
             // You can also register a webhook here
             add_action( 'woocommerce_api_{webhook name}', array( $this, 'webhook' ) );
         }
-        public function token()
-        {
-            // session_start();
-
-            $url = dirname(__FILE__) . '/config.json';
-            $request_token = $this->_bkash_Get_Token();
-            $idtoken = $request_token['id_token'];
-            $_SESSION['token'] = $idtoken;
-            $strJsonFileContents = file_get_contents($url);
-            $array = json_decode($strJsonFileContents, true);
-            $array = $this->_get_config_file();
-            $array['token'] = $idtoken;
-            $newJsonString = json_encode($array);
-
-
-            echo $idtoken;
-
-            // die();
-            // File::put(storage_path() . '/app/public/config.json', $newJsonString);
-            // $url = dirname(__FILE__) . '/config.json';
-
-            file_put_contents($url,$newJsonString);
     
-            // echo $idtoken;
-        }
-    
-        protected function _bkash_Get_Token()
-        {
-            /*$strJsonFileContents = file_get_contents("config.json");
-            $array = json_decode($strJsonFileContents, true);*/
-    
-            $array = $this->_get_config_file();
-    
-            $post_token = array(
-                'app_key' => $array["app_key"],
-                'app_secret' => $array["app_secret"]
-            );
-    
-            $url = curl_init($array["tokenURL"]);
-            // $proxy = $array["proxy"];
-            $posttoken = json_encode($post_token);
-            $header = array(
-                'Content-Type:application/json',
-                'password:' . $array["password"],
-                'username:' . $array["username"]
-            );
-    
-            curl_setopt($url, CURLOPT_HTTPHEADER, $header);
-            curl_setopt($url, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_setopt($url, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($url, CURLOPT_POSTFIELDS, $posttoken);
-            curl_setopt($url, CURLOPT_FOLLOWLOCATION, 1);
-            //curl_setopt($url, CURLOPT_PROXY, $proxy);
-            $resultdata = curl_exec($url);
-            curl_close($url);
-            return json_decode($resultdata, true);
-        }
-    
-        protected function _get_config_file()
-        {
-            $path = dirname(__FILE__) . '/config.json';
-            return json_decode(file_get_contents($path), true);
-        }
-
-            // $url = dirname(__FILE__) . '/config.json';
-            // echo $url;
-            // die();
-
-
-
-        public function createpayment()
-        {
-            // session_start();
-    
-            /*$strJsonFileContents = file_get_contents("config.json");
-            $array = json_decode($strJsonFileContents, true);*/
-    
-            $array = $this->_get_config_file();
-    
-            $amount = WC()->cart->cart_contents_total;
-            $invoice = "BKSHMOON".rand(10,10000000000); // must be unique
-            $intent = "sale";
-            // $proxy = $array["proxy"];
-            $createpaybody = array('amount' => $amount, 'currency' => 'BDT', 'merchantInvoiceNumber' => $invoice, 'intent' => $intent);
-            $url = curl_init($array["createURL"]);
-    
-            $createpaybodyx = json_encode($createpaybody);
-    
-            $header = array(
-                'Content-Type:application/json',
-                'authorization:' . $array["token"],
-                'x-app-key:' . $array["app_key"]
-            );
-    
-            curl_setopt($url, CURLOPT_HTTPHEADER, $header);
-            curl_setopt($url, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_setopt($url, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($url, CURLOPT_POSTFIELDS, $createpaybodyx);
-            curl_setopt($url, CURLOPT_FOLLOWLOCATION, 1);
-            // curl_setopt($url, CURLOPT_PROXY, $proxy);
-    
-            $resultdata = curl_exec($url);
-            curl_close($url);
-            echo $resultdata;
-        }
         
-        public function executepayment()
-        {
-            // session_start();
-    
-            /*$strJsonFileContents = file_get_contents("config.json");
-            $array = json_decode($strJsonFileContents, true);*/
-    
-            $array = $this->_get_config_file();
-    
-            $paymentID = "8AZN30C1611742243055";
-            // $proxy = $array["proxy"];
-    
-            $url = curl_init($array["executeURL"] . $paymentID);
-    
-            $header = array(
-                'Content-Type:application/json',
-                'authorization:' . $array["token"],
-                'x-app-key:' . $array["app_key"]
-            );
-    
-            curl_setopt($url, CURLOPT_HTTPHEADER, $header);
-            curl_setopt($url, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_setopt($url, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($url, CURLOPT_FOLLOWLOCATION, 1);
-            // curl_setopt($url, CURLOPT_PROXY, $proxy);
-    
-            $resultdatax = curl_exec($url);
-            curl_close($url);
-    
-            $this->_updateOrderStatus($resultdatax);
-    
-            // echo $resultdatax;
-        }
-    
-        protected function _updateOrderStatus($resultdatax)
-        {
-            $resultdatax = json_decode($resultdatax);
-    
-            // if ($resultdatax && $resultdatax->paymentID != null && $resultdatax->transactionStatus == 'Completed') {
-            //     DB::table('orders')->where([
-            //         'invoice' => $resultdatax->merchantInvoiceNumber
-            //     ])->update([
-            //         'status' => 'Processing', 'trxID' => $resultdatax->trxID
-            //     ]);
-            // }
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -357,7 +190,7 @@ function misha_init_gateway_class() {
             ) );
          
             wp_enqueue_script( 'woocommerce_misha' );
-            wp_enqueue_script( "moon-bkash-plugin-js", plugins_url( 'js/main.js', __FILE__ ),array( "jquery" ), '1.0.0', true );
+            // wp_enqueue_script( "moon-bkash-plugin-js", plugins_url( 'js/main.js', __FILE__ ),array( "jquery" ), '1.0.0', true );
             // wp_enqueue_script( "main-js", get_theme_file_uri("/assets/js/main.js"),array( "jquery" ), '1.0.0', true );
         }
  
@@ -395,37 +228,170 @@ function misha_init_gateway_class() {
 		/*
 		 * We're processing the payments here, everything about it is in Step 5
 		 */
+        protected function _bkash_Get_Token()
+        {
+            /*$strJsonFileContents = file_get_contents("config.json");
+            $array = json_decode($strJsonFileContents, true);*/
+    
+            $array = $this->_get_config_file();
+            $post_token = array(
+                'app_key' => $array["app_key"],
+                'app_secret' => $array["app_secret"]
+            );
+            $url = curl_init($array["tokenURL"]);
+            // $proxy = $array["proxy"];
+            $posttoken = json_encode($post_token);
+            $header = array(
+                'Content-Type:application/json',
+                'password:' . $array["password"],
+                'username:' . $array["username"]
+            );
+    
+            curl_setopt($url, CURLOPT_HTTPHEADER, $header);
+            curl_setopt($url, CURLOPT_CUSTOMREQUEST, "POST");
+            curl_setopt($url, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($url, CURLOPT_POSTFIELDS, $posttoken);
+            curl_setopt($url, CURLOPT_FOLLOWLOCATION, 1);
+            //curl_setopt($url, CURLOPT_PROXY, $proxy);
+            $resultdata = curl_exec($url);
+            curl_close($url);
+            return json_decode($resultdata, true);
+        }
+    
+        protected function _get_config_file(){
+            $path = dirname(__FILE__) . '/config.json';
+            return json_decode(file_get_contents($path), true);
+        }
+        public function createpayment(){
+            // session_start();
+    
+            /*$strJsonFileContents = file_get_contents("config.json");
+            $array = json_decode($strJsonFileContents, true);*/
+    
+            $array = $this->_get_config_file();
+    
+            $amount = WC()->cart->cart_contents_total;
+            $invoice = "BKSHMOON".rand(10,10000000000); // must be unique
+            $intent = "sale";
+            // $proxy = $array["proxy"];
+            $createpaybody = array('amount' => $amount, 'currency' => 'BDT', 'merchantInvoiceNumber' => $invoice, 'intent' => $intent);
+            $url = curl_init($array["createURL"]);
+    
+            $createpaybodyx = json_encode($createpaybody);
+    
+            $header = array(
+                'Content-Type:application/json',
+                'authorization:' . $array["token"],
+                'x-app-key:' . $array["app_key"]
+            );
+    
+            curl_setopt($url, CURLOPT_HTTPHEADER, $header);
+            curl_setopt($url, CURLOPT_CUSTOMREQUEST, "POST");
+            curl_setopt($url, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($url, CURLOPT_POSTFIELDS, $createpaybodyx);
+            curl_setopt($url, CURLOPT_FOLLOWLOCATION, 1);
+            // curl_setopt($url, CURLOPT_PROXY, $proxy);
+    
+            $resultdata = curl_exec($url);
+            curl_close($url);
+            echo $resultdata;
+        }
+        public function executepayment(){
+    
+            $array = $this->_get_config_file();
+    
+            $paymentID = "8AZN30C1611742243055";
+            // $proxy = $array["proxy"];
+    
+            $url = curl_init($array["executeURL"] . $paymentID);
+    
+            $header = array(
+                'Content-Type:application/json',
+                'authorization:' . $array["token"],
+                'x-app-key:' . $array["app_key"]
+            );
+    
+            curl_setopt($url, CURLOPT_HTTPHEADER, $header);
+            curl_setopt($url, CURLOPT_CUSTOMREQUEST, "POST");
+            curl_setopt($url, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($url, CURLOPT_FOLLOWLOCATION, 1);
+            // curl_setopt($url, CURLOPT_PROXY, $proxy);
+    
+            $resultdatax = curl_exec($url);
+            curl_close($url);
+    
+            $this->_updateOrderStatus($resultdatax);
+    
+            // echo $resultdatax;
+        }
+        protected function _updateOrderStatus($resultdatax){
+            $resultdatax = json_decode($resultdatax);
+    
+            // if ($resultdatax && $resultdatax->paymentID != null && $resultdatax->transactionStatus == 'Completed') {
+            //     DB::table('orders')->where([
+            //         'invoice' => $resultdatax->merchantInvoiceNumber
+            //     ])->update([
+            //         'status' => 'Processing', 'trxID' => $resultdatax->trxID
+            //     ]);
+            // }
+        }
+
 		public function process_payment( $order_id ) {
- 
             global $woocommerce;
          
             // we need it to get any order detailes
             $order = wc_get_order( $order_id );
          
-         
+            $url = dirname(__FILE__) . '/config.json';
+            $request_token = $this->_bkash_Get_Token();
+            $idtoken = $request_token['id_token'];
+            $_SESSION['token'] = $idtoken;
+            $strJsonFileContents = file_get_contents($url);
+            $array = json_decode($strJsonFileContents, true);
+            $array = $this->_get_config_file();
+
+
+
+            $amount = WC()->cart->cart_contents_total;
+            $invoice = "BKSHMOON".rand(10,10000000000); // must be unique
+            $intent = "sale";
+            // $proxy = $array["proxy"];
+            $createpaybody = array('amount' => $amount, 'currency' => 'BDT', 'merchantInvoiceNumber' => $invoice, 'intent' => $intent);
+            $createurl = $array["createURL"];    
+            $header = array(
+                'Content-Type:application/json',
+                'authorization:' . $array["token"],
+                'x-app-key:' . $array["app_key"]
+            );
+            $array['token'] = $idtoken;
+            $newJsonString = json_encode($array);
+            echo $idtoken;
+            file_put_contents($url,$newJsonString);
+
             /*
               * Array with parameters for API interaction
              */
 
             $args = array(
-
-                
-
+                'method' => 'POST',
+                'timeout' => 30,
+                'headers' => $header,
+                'body' => $createpaybody,
             );
 
-        //  print_r($order->total);
+            // print_r($order->total);
             /*
              * Your API interaction could be built with wp_remote_post()
               */
-             $response = wp_remote_post( '{payment processor endpoint}', $args );
+            $response = wp_remote_post( $createurl, $args );
          
+            print_r($response);
+            if( !is_wp_error( $response ) ) {
          
-             if( !is_wp_error( $response ) ) {
+                $body = json_decode( $response['body'], true );
          
-                 $body = json_decode( $response['body'], true );
-         
-                 // it could be different depending on your payment processor
-                 if ( $body['response']['responseCode'] == 'APPROVED' ) {
+                // it could be different depending on your payment processor
+                if ( $body['response']['responseCode'] == 'APPROVED' ) {
          
                     // we received the payment
                     $order->payment_complete();
@@ -443,7 +409,7 @@ function misha_init_gateway_class() {
                         'redirect' => $this->get_return_url( $order )
                     );
          
-                 } else {
+                } else {
                     wc_add_notice(  'Please try again.', 'error' );
                     return;
                 }
@@ -473,9 +439,9 @@ function misha_init_gateway_class() {
             ?>
                 <script type="text/javascript">
                     var accessToken='';
-                    $(document).ready(function(){
-                        $.ajax({
-                            url: "http://localhost/lead-demo/wp-content/plugins/moon-bkash-plugin/token.php",
+                    jQuery(document).ready(function(){
+                        jQuery.ajax({
+                            url: "http://localhost/demo/wp-content/plugins/moon-bkash-plugin-with-api/token.php",
                             type: 'POST',
                             contentType: 'application/json',
                             success: function (data) {
@@ -490,8 +456,8 @@ function misha_init_gateway_class() {
                         });
 
                         var paymentConfig={
-                            createCheckoutURL:"http://localhost/lead-demo/wp-content/plugins/moon-bkash-plugin/createpayment.php",
-                            executeCheckoutURL:"http://localhost/lead-demo/wp-content/plugins/moon-bkash-plugin/executepayment.php",
+                            createCheckoutURL:"http://localhost/demo/wp-content/plugins/moon-bkash-plugin-with-api/createpayment.php",
+                            executeCheckoutURL:"http://localhost/demo/wp-content/plugins/moon-bkash-plugin-with-api/executepayment.php",
                         };
 
                         var paymentRequest;

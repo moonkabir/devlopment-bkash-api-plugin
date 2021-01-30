@@ -1,12 +1,12 @@
 var accessToken='';
-    $(document).ready(function(){
-        $.ajax({
+    jQuery(document).ready(function(){
+        jQuery.ajax({
             url: "http://localhost/demo/wp-content/plugins/moon-bkash-plugin-with-api/token.php",
             type: 'POST',
             contentType: 'application/json',
             success: function (data) {
                 console.log('got data from token  ..');
-                console.log(JSON.stringify(data));
+                // console.log(JSON.stringify(data));
                 
                 accessToken=JSON.stringify(data);
             },
@@ -31,7 +31,7 @@ var accessToken='';
                 console.log('=> createRequest (request) :: ');
                 console.log(request);
                 
-                $.ajax({
+                jQuery.ajax({
                     url: 'http://localhost/demo/wp-content/plugins/moon-bkash-plugin-with-api//paymentConfig.createCheckoutURL+"?amount="+paymentRequest.amount',
                     type:'GET',
                     contentType: 'application/json',
@@ -41,11 +41,6 @@ var accessToken='';
                         console.log(JSON.stringify(data));
                         
                         var obj = JSON.parse(data);
-
-
-                        // var url = 'config.json';
-                        // console.log(url)
-
                         const URL = 'http://localhost/demo/wp-content/plugins/moon-bkash-plugin-with-api//config.json';
                         var paymentID = obj.paymentID;
                         var invoiceID = obj.merchantInvoiceNumber;
@@ -76,7 +71,7 @@ var accessToken='';
             
             executeRequestOnAuthorization: function(){
                 console.log('=> executeRequestOnAuthorization');
-                $.ajax({
+                jQuery.ajax({
                     url: paymentConfig.executeCheckoutURL+"?paymentID="+paymentID,
                     type: 'GET',
                     contentType:'application/json',
